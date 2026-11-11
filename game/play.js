@@ -206,6 +206,10 @@ $("#menuAdmin").addEventListener("click", () => { $("#menu").hidden = true; admi
 const qBtn = $("#menuQuality"); const qLabel = () => (qBtn.textContent = "Graphics: " + (quality === "high" ? "High (bloom, big forest)" : "Mobile-friendly") + " – tap to switch (reloads)");
 qLabel(); qBtn.addEventListener("click", () => { localStorage.setItem("arerps.q", quality === "high" ? "low" : "high"); location.reload(); });
 
+const tp = (x, z) => { controls.pos.set(x, 0, z); $("#menu").hidden = true; };
+$("#tpCampus").addEventListener("click", () => tp(0, 52));
+$("#tpDispatch").addEventListener("click", () => tp(world.dispatch.position.x - 7, world.dispatch.position.z + hzOut()));
+const hzOut = () => 19;
 // ---------- HUD ----------
 function renderTags() {
   const t = [];
@@ -232,6 +236,9 @@ function frame() {
     hudT = .5; const h = Math.floor(weather.time), m = Math.floor((weather.time % 1) * 60);
     $("#hudInfo").innerHTML = `🕒 ${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")} · ☁ ${weather.preset}<br>💨 wind ${(weather.gust * 40).toFixed(0)} mph`;
     renderTags();
+    const inc = [], seen = new Set();
+    fire.fires.forEach((f) => { const k = f.building ? f.building.name : "Wildfire"; if (seen.has(k)) return; seen.add(k); inc.push({ id: "23-" + (1050 + inc.length), label: (f.building ? "Structure fire " : "") + k, units: f.building ? "E1, E2, M1" : "E3, R1", x: f.pos.x, z: f.pos.z }); });
+    world.dispatch.setIncidents(inc);
   }
   composer ? composer.render() : renderer.render(scene, camera);
 }

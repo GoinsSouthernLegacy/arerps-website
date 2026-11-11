@@ -1,6 +1,7 @@
 // ARERPS World: Chattanooga-inspired Appalachian Aquatic Discovery Center campus, terrain, river, forest, grass.
 // PLATFORM: iOS (Safari/PWA), web app, website. NOT for Roblox Studio, PC/Xbox engines.
 import * as THREE from "three";
+import { buildDispatchCenter } from "../systems/dispatch/DispatchCenter.js";
 
 const rngSeed = (s) => () => (s = (s * 16807) % 2147483647) / 2147483647;
 const sstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
@@ -213,7 +214,9 @@ export function buildWorld(scene, U, quality = "high") {
     };
     m.customProgramCacheKey = () => "sway" + amp + off; return m;
   };
-  const occupied = (x, z, pad = 4) => W.colliders.some((c) => x > c.minX - pad && x < c.maxX + pad && z > c.minZ - pad && z < c.maxZ + pad);
+  W.dispatch = buildDispatchCenter(scene, W, 172, 8, Math.max(0, height(172, 8)));
+  W.updaters.push((t, dt) => W.dispatch.update(t, dt));
+  const occupied = (x, z, pad = 4) => (Math.abs(x - 172) < 18 + pad && Math.abs(z - 8) < 15 + pad) || W.colliders.some((c) => x > c.minX - pad && x < c.maxX + pad && z > c.minZ - pad && z < c.maxZ + pad);
   const paved = (x, z) => Math.hypot(x, z - 34) < 49 || (z > 52 && z < 64) || (Math.abs(z + 62) < 7) || (Math.abs(x + 145) < 7 && z < 52 && z > -62) || (Math.abs(x - 145) < 7 && z < 52 && z > -62) || (x > 60 && x < 180 && z > -52 && z < -8) || (Math.abs(x + 145) < 9 && z > -20);
   const crownGeo = new THREE.IcosahedronGeometry(1, 2); { const pp = crownGeo.attributes.position; for (let i = 0; i < pp.count; i++) { const k = 1 + (Math.sin(pp.getX(i) * 5) * Math.cos(pp.getZ(i) * 4)) * .18; pp.setXYZ(i, pp.getX(i) * k * 1.1, pp.getY(i) * k * .9, pp.getZ(i) * k * 1.1); } crownGeo.computeVertexNormals(); }
   const trunkM = mat({ color: 0x4b3b2d, roughness: 1 }), crownM = swayMat(mat({ color: 0xffffff, roughness: .85 }), .1, 3.5), pineM = swayMat(mat({ color: 0xffffff, roughness: .9 }), .06, 2.5);

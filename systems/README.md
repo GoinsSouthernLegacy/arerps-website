@@ -7,6 +7,7 @@ Each folder is one stand-alone system. **Built for iOS Safari, PWA web apps and 
 - `wheel/` Interactive Radial Wheel
 - `admin/` ARERPS Admin Panel
 - `audio/` Ambient Audio System
+- `dispatch/` Dispatch Data Center MK-II
 - `controls/` Player Controls System
 
 The full game that combines them all is `../game/play.js` + `../game/world.js` (open `../play.html`).
