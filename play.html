@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>A.R.E.R.P.S. – Play</title>
+  <meta name="theme-color" content="#070b14">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="stylesheet" href="css/play.css">
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <div id="mask" hidden><div class="visor"></div></div>
+  <div id="flash"></div>
+  <div id="hud">
+    <div id="hudInfo"></div>
+    <div id="hudTags"></div>
+  </div>
+  <div id="toasts"></div>
+  <div class="topbtns">
+    <button id="btnMenu">☰ Menu</button>
+    <button id="btnFps">FPS</button>
+    <button id="btnWheel">◎ Wheel</button>
+  </div>
+  <div id="joy"><div id="joyKnob"></div></div>
+  <button id="btnUse">USE</button>
+  <div id="wheel"></div>
+  <div id="menu" hidden>
+    <div class="admin-box">
+      <div class="admin-head"><strong>Menu</strong><button class="chip" id="menuClose">✕</button></div>
+      <div class="admin-body">
+        <button class="btn primary" id="menuAdmin">⚙ ARERPS ADMIN PANEL</button>
+        <button class="btn" id="menuQuality">Graphics: …</button>
+        <a class="btn" href="index.html">← Back to website</a>
+        <p class="hint">Move: left stick / WASD. Look: drag. Pinch out = first person. Hold USE to spray water. Wheel: ◎ or Q.</p>
+      </div>
+    </div>
+  </div>
+  <div id="admin" hidden></div>
+  <div id="start">
+    <div>
+      <h1>A.R.E.R.P.S.</h1>
+      <p>Appalachian Aquatic Discovery Center · Chattanooga, TN</p>
+      <button class="btn primary" id="btnStart">▶ Enter World</button>
+      <p class="hint" id="loadMsg">Loading…</p>
+    </div>
+  </div>
+  <script type="importmap">{ "imports": { "three": "./vendor/three/three.module.js", "three/addons/": "./vendor/three/addons/" } }</script>
+  <script type="module" src="game/play.js"></script>
+</body>
+</html>
