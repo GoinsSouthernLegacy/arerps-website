@@ -7,7 +7,7 @@ export class PlayerControls {
     this.canvas = canvas; this.camera = camera; this.ui = ui; this.o = opts; // opts.height(x,z), opts.colliders[]
     this.pos = new THREE.Vector3(8, 0, 48); this.yaw = Math.PI; this.pitch = -.05;
     this.fps = false; this.keys = {}; this.joy = { x: 0, y: 0 }; this.bob = 0; this.moving = false;
-    this.avatar = this._avatar(); this.avatar.castShadow = true;
+    this.avatar = this._avatar();
     this.dist = 5; this._look = null; this._joyId = null; this._pinch = null;
     addEventListener("keydown", (e) => { this.keys[e.code] = true; if (e.code === "KeyV") this.setFps(!this.fps); });
     addEventListener("keyup", (e) => (this.keys[e.code] = false));
@@ -21,17 +21,54 @@ export class PlayerControls {
     this._joyBind();
   }
 
+  // Rigged blocky avatar: pivots for arms/legs so walking and emotes can animate it.
   _avatar() {
-    const g = new THREE.Group(), m = (c, r = .8, me = 0) => new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: me });
-    const add = (geo, mat, x, y, z) => { const o = new THREE.Mesh(geo, mat); o.position.set(x, y, z); o.castShadow = true; g.add(o); return o; };
-    add(new THREE.BoxGeometry(.55, .75, .3), m(0x2b2f3a), 0, 1.15, 0);       // turnout coat
-    add(new THREE.BoxGeometry(.56, .12, .31), m(0xd8e0e8, .4, .4), 0, 1.0, 0); // reflective stripe
-    add(new THREE.BoxGeometry(.5, .8, .26), m(0x1b1e26), 0, .45, 0);         // pants
-    add(new THREE.SphereGeometry(.17, 20, 14), m(0xd6a98a), 0, 1.68, 0);     // head
-    add(new THREE.SphereGeometry(.2, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), m(0xf2c200, .35), 0, 1.72, 0); // helmet
-    [-1, 1].forEach((s) => { add(new THREE.BoxGeometry(.16, .7, .18), m(0x2b2f3a), s * .37, 1.12, 0); add(new THREE.BoxGeometry(.18, .1, .3), m(0x111), s * .13, .05, .04); });
-    this.maskMesh = add(new THREE.BoxGeometry(.24, .2, .12), m(0x222831, .3, .6), 0, 1.64, .15); this.maskMesh.visible = false;
+    const g = new THREE.Group(), body = new THREE.Group(); g.add(body);
+    const M = (c, r = .8, me = 0) => new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: me });
+    const mk = { top: M(0x1c2a52), pants: M(0x141c33), vest: M(0x222831, .6, .2), hat: M(0x16203f, .5), skin: M(0xd6a98a), accent: M(0xd8e0e8, .4, .4) };
+    const add = (geo, mat, x, y, z, parent = body) => { const o = new THREE.Mesh(geo, mat); o.position.set(x, y, z); o.castShadow = true; parent.add(o); return o; };
+    const pivot = (x, y, parent = body) => { const p = new THREE.Group(); p.position.set(x, y, 0); parent.add(p); return p; };
+    add(new THREE.BoxGeometry(.55, .7, .3), mk.top, 0, 1.15, 0);
+    const vest = add(new THREE.BoxGeometry(.58, .5, .34), mk.vest, 0, 1.2, 0);
+    const stripe = add(new THREE.BoxGeometry(.56, .1, .32), mk.accent, 0, .95, 0);
+    add(new THREE.BoxGeometry(.52, .08, .28), M(0x0b0d12), 0, .82, 0); // duty belt
+    const head = pivot(0, 1.5); add(new THREE.SphereGeometry(.17, 20, 14), mk.skin, 0, .18, 0, head);
+    const hat = add(new THREE.SphereGeometry(.2, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), mk.hat, 0, .24, 0, head);
+    const brim = add(new THREE.BoxGeometry(.3, .03, .16), mk.hat, 0, .22, .17, head);
+    this.maskMesh = add(new THREE.BoxGeometry(.24, .2, .12), M(0x222831, .3, .6), 0, .14, .15, head); this.maskMesh.visible = false;
+    const armL = pivot(-.38, 1.45), armR = pivot(.38, 1.45), legL = pivot(-.14, .8), legR = pivot(.14, .8);
+    [armL, armR].forEach((a) => { add(new THREE.BoxGeometry(.16, .5, .18), mk.top, 0, -.25, 0, a); add(new THREE.BoxGeometry(.14, .22, .16), mk.skin, 0, -.58, 0, a); });
+    [legL, legR].forEach((l) => { add(new THREE.BoxGeometry(.22, .8, .24), mk.pants, 0, -.4, 0, l); add(new THREE.BoxGeometry(.24, .1, .34), M(0x0b0d12), 0, -.78, .05, l); });
+    const hand = new THREE.Group(); hand.position.set(0, -.6, .05); armR.add(hand); // held item mount
+    this.rig = { body, head, armL, armR, legL, legR, hand, mk, vest, stripe, hat, brim };
+    this.emoteFn = null; this.emoteT = 0; this.walkA = 0; this.bubble = null;
     return g;
+  }
+
+  // Uniform looks (colors follow ARERPS branding: police navy, sheriff tan/green, fire turnout, EMS, DOT hi-vis, SWAT black).
+  setUniform(id) {
+    const U = {
+      police: [0x1c2a52, 0x141c33, 0x222831, 0x16203f, 0xd8e0e8, 1], sheriff: [0xb7a67a, 0x4a5a35, 0x3d4a2c, 0x3f4a2a, 0xd9b24a, 1],
+      fire: [0x8a1c1c, 0x4a1010, 0x3a1414, 0xf2c200, 0xe8e07a, 1], ems: [0x1b2f66, 0x0f1a3a, 0x1b2f66, 0x1b2f66, 0xff8a1c, 1],
+      dot: [0xff7a1a, 0x2a3350, 0xffb020, 0xf2c200, 0xd8ff3a, 1], swat: [0x15171b, 0x15171b, 0x0b0c0f, 0x0b0c0f, 0x394049, 0],
+      fbi: [0x1c2a52, 0x3a3a3a, 0x15181f, 0x1c2a52, 0xffd23a, 1], marine: [0x5b6b43, 0x56673e, 0x3e4a2c, 0x56673e, 0x8a7a4a, 1]
+    }[id]; if (!U) return; const k = this.rig.mk;
+    k.top.color.setHex(U[0]); k.pants.color.setHex(U[1]); k.vest.color.setHex(U[2]); k.hat.color.setHex(U[3]); k.accent.color.setHex(U[4]);
+    this.rig.brim.visible = !!U[5]; this.uniform = id;
+  }
+
+  playEmote(fn) { this.emoteFn = fn; this.emoteT = 0; }
+  _animate(dt) {
+    const r = this.rig, lerp = (o, k, v) => { o.rotation[k] += (v - o.rotation[k]) * Math.min(1, dt * 14); };
+    if (this.moving && this.emoteFn) this.emoteFn = null;
+    let P = { aLx: 0, aRx: 0, aLz: 0, aRz: 0, lL: 0, lR: 0, by: 0, bx: 0, bry: 0, hx: 0 };
+    if (this.emoteFn) { this.emoteT += dt; Object.assign(P, this.emoteFn(this.emoteT)); }
+    else if (this.moving) { const sw = Math.sin(this.bob) * .9; P.aLx = sw; P.aRx = -sw; P.lL = -sw; P.lR = sw; P.by = Math.abs(Math.cos(this.bob)) * .04; }
+    if (this.heldAim) this.avatar.rotation.y = this.yaw + Math.PI;
+    if (this.heldAim) { P.aRx = -1.5 + (this.pitch || 0); P.aRz = 0; }
+    lerp(r.armL, "x", P.aLx); lerp(r.armR, "x", P.aRx); lerp(r.armL, "z", P.aLz); lerp(r.armR, "z", P.aRz);
+    lerp(r.legL, "x", P.lL); lerp(r.legR, "x", P.lR); lerp(r.head, "x", P.hx);
+    r.body.position.y += (P.by - r.body.position.y) * Math.min(1, dt * 14); lerp(r.body, "x", P.bx); lerp(r.body, "y", P.bry);
   }
 
   setFps(v) { this.fps = v; this.ui.onMode && this.ui.onMode(v); }
@@ -79,6 +116,7 @@ export class PlayerControls {
     }
     const gy = Math.max(this.o.height(this.pos.x, this.pos.z), this.o.ground ? this.o.ground(this.pos.x, this.pos.z) : -99);
     this.pos.y += (gy - this.pos.y) * Math.min(1, dt * 14);
+    this._animate(dt);
     this.avatar.position.copy(this.pos); this.avatar.visible = !this.fps;
     const head = new THREE.Vector3(this.pos.x, this.pos.y + 1.68 + (this.fps && this.moving ? Math.sin(this.bob) * .035 : 0), this.pos.z);
     const dir = new THREE.Vector3(-Math.sin(this.yaw) * Math.cos(this.pitch), Math.sin(this.pitch), -Math.cos(this.yaw) * Math.cos(this.pitch));

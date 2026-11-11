@@ -13,6 +13,9 @@ import { FireSystem } from "../systems/fire/FireSystem.js";
 import { WheelMenu } from "../systems/wheel/WheelMenu.js";
 import { AdminPanel } from "../systems/admin/AdminPanel.js";
 import { AmbientAudio } from "../systems/audio/AmbientAudio.js";
+import { Combat, WEAPONS } from "../systems/combat/Combat.js";
+import { Emotes } from "../systems/emotes/Emotes.js";
+import { RpHud } from "../systems/hud/RpHud.js";
 import { PlayerControls } from "../systems/controls/PlayerControls.js";
 
 const $ = (s) => document.querySelector(s);
@@ -43,6 +46,12 @@ fire.registerFuel(world.fuelPositions);
 const controls = new PlayerControls(canvas, camera, { joyPad: $("#joy"), joyKnob: $("#joyKnob"), onMode: (v) => { $("#btnFps").classList.toggle("on", v); audio.fps = v; syncMask(); } },
   { height, ground, colliders: world.colliders });
 scene.add(controls.avatar);
+const emotes = new Emotes(controls);
+let rp = null;
+const combat = new Combat({ scene, camera, controls, world, audio, hooks: {
+  toast: (m) => toast(m), hit: (m) => rp && (rp.hitMarker(m), m === "Suspect down" && rp.addXp(25, 50)),
+  hurt: () => rp && rp.hurt(), down: () => { toast("You were knocked out.", true); rp && rp.setDead(true); },
+  respawn: () => { rp && rp.setDead(false); controls.pos.set(0, 0, 52); toast("Treated at CHI Memorial. Back on your feet."); } } });
 
 // ---------- Post-processing (glow) ----------
 let composer = null;
@@ -167,7 +176,7 @@ function droidAI(t, dt) {
 
 // ---------- Radial wheel ----------
 const setTool = (t) => { eq.tool = eq.tool === t ? null : t; toast(eq.tool ? "Equipped: " + t : "Tool put away"); renderTags(); };
-const toggle = (k, label) => () => { eq[k] = !eq[k]; toast(label + (eq[k] ? " ON" : " OFF")); if (k === "mask") syncMask(); renderTags(); };
+const toggle = (k, label) => () => { eq[k] = !eq[k]; toast(label + (eq[k] ? " ON" : " OFF")); if (k === "mask") syncMask(); if (k === "armor") combat.armor = eq.armor ? 50 : 0; renderTags(); };
 const wheelItems = [
   { icon: "🧰", label: "Tools", children: [
     { icon: "🚒", label: "Fire Hose", active: () => eq.tool === "hose", action: () => setTool("hose") },
@@ -175,10 +184,10 @@ const wheelItems = [
     { icon: "🔦", label: "Flashlight", active: () => eq.light, action: toggle("light", "Flashlight") },
     { icon: "🪓", label: "Fire Axe", active: () => eq.tool === "axe", action: () => setTool("axe") },
     { icon: "📻", label: "Radio", active: () => eq.tool === "radio", action: () => { setTool("radio"); toast("📻 Dispatch: " + (fire.count ? fire.count + " active fire(s) in the city." : "All clear.")); } }] },
-  { icon: "🛡️", label: "Weapons (RP)", children: [
-    { icon: "⚡", label: "Taser", active: () => eq.tool === "taser", action: () => setTool("taser") },
-    { icon: "🏏", label: "Baton", active: () => eq.tool === "baton", action: () => setTool("baton") },
-    { icon: "🔫", label: "Sidearm", active: () => eq.tool === "sidearm", action: () => setTool("sidearm") }] },
+  { icon: "🛡️", label: "Weapons (RP)", children: Object.entries(WEAPONS).map(([k, w]) => ({ icon: w.icon, label: w.name, active: () => combat.id === k, action: () => { combat.equip(k); eq.tool = null; toast(combat.id ? "Equipped: " + w.name : "Weapon holstered"); renderTags(); } })) },
+  { icon: "😀", label: "Emotes", children: emotes.emoteItems() },
+  { icon: "🙂", label: "Emotions", children: emotes.emotionItems() },
+  { icon: "👔", label: "Uniform", children: [["police","Police","👮"],["sheriff","Sheriff","🤠"],["fire","Fire","🧑‍🚒"],["ems","EMS","🚑"],["dot","DOT","🚧"],["swat","SWAT","🪖"],["fbi","FBI","🕴️"],["marine","Marine","🎖️"]].map(([id,l,i]) => ({ icon: i, label: l, action: () => { controls.setUniform(id); toast("Uniform: " + l); } })) },
   { icon: "😷", label: "Equipment", children: [
     { icon: "😷", label: "SCBA Mask", active: () => eq.mask, action: toggle("mask", "SCBA mask") },
     { icon: "⛑️", label: "Helmet", active: () => true, action: () => toast("Helmet worn") }] },
@@ -192,6 +201,8 @@ const wheelItems = [
     { icon: "✋", label: "Hold", active: () => eq.droidMode === "hold", action: () => { eq.droidMode = "hold"; toast("SPRAID: holding position"); }, keepOpen: true }] }
 ];
 const wheel = new WheelMenu($("#wheel"));
+rp = new RpHud({ world, controls, camera, combat, hooks: { toast: (m) => toast(m), fires: () => fire.fires, openEmotes: () => wheel.toggle(wheelItems) } });
+fire.on("out", () => rp.addXp(15, 25));
 $("#btnWheel").addEventListener("click", () => wheel.toggle(wheelItems));
 $("#btnFps").addEventListener("click", () => controls.setFps(!controls.fps));
 
@@ -223,7 +234,8 @@ let hudT = 0;
 const clock = new THREE.Clock();
 function frame() {
   const dt = Math.min(.05, clock.getDelta()), t = clock.elapsedTime; U.uTime.value = t;
-  weather.update(dt); controls.update(dt);
+  weather.update(dt); controls.update(dt); combat.update(dt); emotes.update(dt); rp && rp.update(dt, t);
+  if (combat.dead <= 0 && fire.fires.some((f) => f.pos.distanceTo(controls.pos) < 2.5)) combat.damage(12 * dt, "fire");
   if (fx.shake > 0) camera.position.add(new THREE.Vector3((Math.random() - .5), (Math.random() - .5), (Math.random() - .5)).multiplyScalar(fx.shake * .3));
   fx.update(dt, controls.pos); world.update(t, dt); fire.update(dt, camera.position);
   world.setNight(Math.min(1, fx.night + weather.eff.storm * .35 * (1 - fx.night)));
@@ -246,4 +258,4 @@ renderer.setAnimationLoop(frame);
 
 $("#loadMsg").textContent = `World ready · ${world.treeCount} trees · ${quality === "high" ? "High" : "Mobile"} graphics`;
 $("#btnStart").addEventListener("click", () => { audio.start(); $("#start").remove(); });
-window.__arerps = { renderer, frame, weather, fire, controls, world, fx, scene, camera, strike, eq };
+window.__arerps = { combat, emotes, rp, renderer, frame, weather, fire, controls, world, fx, scene, camera, strike, eq };

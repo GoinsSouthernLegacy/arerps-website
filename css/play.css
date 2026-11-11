@@ -8,7 +8,7 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 .chip{border-radius:999px;padding:6px 14px;font-size:14px}.chip.on{background:var(--blue);border-color:var(--blue)}
 .chip.danger{background:#5a1020;border-color:var(--red)}.chip:disabled{opacity:.4}
 .topbtns{position:fixed;top:calc(10px + env(safe-area-inset-top));right:10px;display:flex;gap:8px;z-index:20}
-#hud{position:fixed;top:calc(10px + env(safe-area-inset-top));left:10px;z-index:15;pointer-events:none;text-shadow:0 1px 3px #000}
+#hud{position:fixed;top:calc(10px + env(safe-area-inset-top));left:146px;z-index:15;pointer-events:none;text-shadow:0 1px 3px #000}
 #hudInfo{font-weight:700;font-size:14px;line-height:1.5}#hudTags span{display:inline-block;margin:3px 4px 0 0;padding:2px 8px;border-radius:999px;background:rgba(46,123,255,.5);font-size:12px}
 #hudTags span.red{background:rgba(255,45,74,.6)}
 #toasts{position:fixed;top:calc(80px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:30;display:grid;gap:6px;width:min(92vw,520px);pointer-events:none}

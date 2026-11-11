@@ -1,6 +1,7 @@
 // ARERPS World: Chattanooga-inspired Appalachian Aquatic Discovery Center campus, terrain, river, forest, grass.
 // PLATFORM: iOS (Safari/PWA), web app, website. NOT for Roblox Studio, PC/Xbox engines.
 import * as THREE from "three";
+import { buildAquaticExterior, cascadeGround } from "../systems/aquarium/AquaticExterior.js";
 import { buildDispatchCenter } from "../systems/dispatch/DispatchCenter.js";
 
 const rngSeed = (s) => () => (s = (s * 16807) % 2147483647) / 2147483647;
@@ -16,6 +17,7 @@ export function height(x, z) {
 
 // Pier / boardwalk decks the player may stand on above the water.
 export function ground(x, z) {
+  const cg = cascadeGround(x, z); if (cg > -50) return cg;
   if (x > 46 && x < 50.4 && z > 55 && z < 84) return .15;
   if (z > 55 && z < 63.2 && Math.abs(x) < 125) return .12;
   return -99;
@@ -180,6 +182,8 @@ export function buildWorld(scene, U, quality = "high") {
   const sroof = new THREE.Mesh(new THREE.CylinderGeometry(11, 11, .5, 3, 1), steel); sroof.rotation.set(0, 0, 0); sroof.position.set(98, 7, 36); sroof.castShadow = true; add(sroof);
   [[-8, -4], [8, -4], [-8, 4], [8, 4]].forEach(([a, b]) => { const c2 = new THREE.Mesh(new THREE.CylinderGeometry(.25, .25, 7), steel); c2.position.set(98 + a, 3.5, 36 + b); add(c2); });
 
+  buildAquaticExterior(scene, W, rnd);
+
   // ---------- Fountain ----------
   const basin = new THREE.Mesh(new THREE.CylinderGeometry(9.5, 10, 1.4, 48), new THREE.MeshStandardMaterial({ map: stoneTex })); basin.position.set(0, .7, 34); basin.castShadow = basin.receiveShadow = true; add(basin);
   const fw = new THREE.Mesh(new THREE.CircleGeometry(8.6, 40).rotateX(-Math.PI / 2), new THREE.MeshPhysicalMaterial({ color: 0x2b7fa5, roughness: .05, transparent: true, opacity: .85, emissive: 0x19c9e6, emissiveIntensity: 0 })); fw.position.set(0, 1.25, 34); add(fw);
@@ -308,7 +312,7 @@ export function buildWorld(scene, U, quality = "high") {
     const n = { g, path, x: path.x0 + rnd() * (path.x1 - path.x0), dir: rnd() < .5 ? 1 : -1, sp: .9 + rnd() * .6, ph: rnd() * 6 };
     add(g); W.npcs.push(n);
   }
-  W.updaters.push((t, dt) => W.npcs.forEach((n) => { n.x += n.dir * n.sp * dt; if (n.x > n.path.x1 || n.x < n.path.x0) n.dir *= -1; n.g.position.set(n.x, height(n.x, n.path.z) + Math.abs(Math.sin(t * 6 + n.ph)) * .05, n.path.z); n.g.rotation.y = n.dir > 0 ? Math.PI / 2 : -Math.PI / 2; }));
+  W.updaters.push((t, dt) => W.npcs.forEach((n) => { if (n.down > 0) { n.down -= dt; n.g.rotation.z = n.down > .4 ? 1.5 : 0; n.g.position.y = height(n.x, n.path.z) + (n.down > .4 ? .25 : 0); return; } n.g.rotation.z = 0; n.x += n.dir * n.sp * dt; if (n.x > n.path.x1 || n.x < n.path.x0) n.dir *= -1; n.g.position.set(n.x, height(n.x, n.path.z) + Math.abs(Math.sin(t * 6 + n.ph)) * .05, n.path.z); n.g.rotation.y = n.dir > 0 ? Math.PI / 2 : -Math.PI / 2; }));
 
   W.setNight = (n) => W.nightMats.forEach(({ m, k, base = 0 }) => { m.emissiveIntensity = base + n * k; });
   W.waterY = (rise) => { water.position.y = W.waterBase + rise; };

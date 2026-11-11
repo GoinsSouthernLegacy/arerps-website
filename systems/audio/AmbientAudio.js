@@ -28,6 +28,14 @@ export class AmbientAudio {
     this.rainG.gain.setTargetAtTime(e.rain * .22, t, .5);
     this.windG.gain.setTargetAtTime(gust * .5 + .02, t, .4);
   }
+  // Short synthesized weapon sounds: "sidearm","rifle","shotgun","taser","melee","dry"
+  shot(kind) {
+    if (!this.ctx) return; const ctx = this.ctx, t = ctx.currentTime;
+    const P = { sidearm: [1800, .12, .55], rifle: [1400, .14, .6], shotgun: [700, .3, .9], taser: [4500, .35, .3], melee: [500, .08, .35], dry: [3000, .03, .2] }[kind] || [1500, .1, .5];
+    const s = ctx.createBufferSource(); s.buffer = this.buf; const f = ctx.createBiquadFilter(); f.type = kind === "taser" ? "highpass" : "lowpass"; f.frequency.value = P[0];
+    const g = ctx.createGain(); g.gain.setValueAtTime(P[2], t); g.gain.exponentialRampToValueAtTime(.001, t + P[1]);
+    s.connect(f); f.connect(g); g.connect(ctx.destination); s.start(t, Math.random() * 2, P[1] + .05);
+  }
   quake(v) { if (this.ctx) this.rumbleG.gain.setTargetAtTime(v * .9, this.ctx.currentTime, .2); }
   spray(on) { if (this.ctx) this.sprayG.gain.setTargetAtTime(on ? .22 : 0, this.ctx.currentTime, .08); }
 
