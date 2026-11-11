@@ -28,6 +28,17 @@ export class AmbientAudio {
     this.rainG.gain.setTargetAtTime(e.rain * .22, t, .5);
     this.windG.gain.setTargetAtTime(gust * .5 + .02, t, .4);
   }
+  // Waterfall-stairs sound: v 0..1 = loudness by distance. Layered rush (band-pass) + splash hiss (high-pass) with slow trickle modulation.
+  water(v) {
+    if (!this.ctx) return; const ctx = this.ctx;
+    if (!this._w) {
+      const mk = (type, f, q) => { const s = ctx.createBufferSource(); s.buffer = this.buf; s.loop = true; s.loopStart = Math.random(); const fl = ctx.createBiquadFilter(); fl.type = type; fl.frequency.value = f; fl.Q.value = q; const g = ctx.createGain(); g.gain.value = 0; s.connect(fl); fl.connect(g); g.connect(ctx.destination); s.start(); return { g, fl }; };
+      this._w = { rush: mk("bandpass", 700, .6), hiss: mk("highpass", 3800, .5), low: mk("lowpass", 260, .7) };
+    }
+    const t = ctx.currentTime, m = 1 + Math.sin(t * 1.7) * .12 + Math.sin(t * 4.3) * .06;
+    this._w.rush.g.gain.setTargetAtTime(v * .32 * m, t, .2); this._w.hiss.g.gain.setTargetAtTime(v * .12 * m, t, .2); this._w.low.g.gain.setTargetAtTime(v * .35, t, .3);
+    this._w.rush.fl.frequency.setTargetAtTime(650 + Math.sin(t * .9) * 150, t, .3);
+  }
   // Short synthesized weapon sounds: "sidearm","rifle","shotgun","taser","melee","dry"
   shot(kind) {
     if (!this.ctx) return; const ctx = this.ctx, t = ctx.currentTime;

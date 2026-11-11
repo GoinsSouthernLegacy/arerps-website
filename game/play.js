@@ -14,6 +14,7 @@ import { WheelMenu } from "../systems/wheel/WheelMenu.js";
 import { AdminPanel } from "../systems/admin/AdminPanel.js";
 import { AmbientAudio } from "../systems/audio/AmbientAudio.js";
 import { Combat, WEAPONS } from "../systems/combat/Combat.js";
+import { StaffTruck } from "../systems/vehicles/StaffTruck.js";
 import { Emotes } from "../systems/emotes/Emotes.js";
 import { RpHud } from "../systems/hud/RpHud.js";
 import { PlayerControls } from "../systems/controls/PlayerControls.js";
@@ -47,6 +48,8 @@ const controls = new PlayerControls(canvas, camera, { joyPad: $("#joy"), joyKnob
   { height, ground, colliders: world.colliders });
 scene.add(controls.avatar);
 const emotes = new Emotes(controls);
+let admin = null;
+const truck = new StaffTruck({ scene, controls, world, height, ground, isAdmin: () => !!(admin && admin.unlocked), toast: (m, r) => toast(m, r) });
 let rp = null;
 const combat = new Combat({ scene, camera, controls, world, audio, hooks: {
   toast: (m) => toast(m), hit: (m) => rp && (rp.hitMarker(m), m === "Suspect down" && rp.addXp(25, 50)),
@@ -133,7 +136,7 @@ const useBtn = $("#btnUse");
 useBtn.addEventListener("pointerdown", (e) => { using = true; useBtn.classList.add("down"); useBtn.setPointerCapture(e.pointerId); e.stopPropagation(); });
 useBtn.addEventListener("pointerup", () => { using = false; useBtn.classList.remove("down"); });
 useBtn.addEventListener("pointercancel", () => { using = false; useBtn.classList.remove("down"); });
-addEventListener("keydown", (e) => { if (e.code === "Space") using = true; if (e.code === "KeyQ" || e.code === "Tab") { e.preventDefault(); wheel.toggle(wheelItems); } });
+addEventListener("keydown", (e) => { if (e.code === "KeyE") truck.toggle(); if (e.code === "Space") using = true; if (e.code === "KeyQ" || e.code === "Tab") { e.preventDefault(); wheel.toggle(wheelItems); } });
 addEventListener("keyup", (e) => { if (e.code === "Space") using = false; });
 
 // ---------- Flashlight, SPRAID droid + drone ----------
@@ -185,6 +188,7 @@ const wheelItems = [
     { icon: "🪓", label: "Fire Axe", active: () => eq.tool === "axe", action: () => setTool("axe") },
     { icon: "📻", label: "Radio", active: () => eq.tool === "radio", action: () => { setTool("radio"); toast("📻 Dispatch: " + (fire.count ? fire.count + " active fire(s) in the city." : "All clear.")); } }] },
   { icon: "🛡️", label: "Weapons (RP)", children: Object.entries(WEAPONS).map(([k, w]) => ({ icon: w.icon, label: w.name, active: () => combat.id === k, action: () => { combat.equip(k); eq.tool = null; toast(combat.id ? "Equipped: " + w.name : "Weapon holstered"); renderTags(); } })) },
+  { icon: "🛻", label: "Staff Truck (admin)", action: () => truck.toggle() },
   { icon: "😀", label: "Emotes", children: emotes.emoteItems() },
   { icon: "🙂", label: "Emotions", children: emotes.emotionItems() },
   { icon: "👔", label: "Uniform", children: [["police","Police","👮"],["sheriff","Sheriff","🤠"],["fire","Fire","🧑‍🚒"],["ems","EMS","🚑"],["dot","DOT","🚧"],["swat","SWAT","🪖"],["fbi","FBI","🕴️"],["marine","Marine","🎖️"]].map(([id,l,i]) => ({ icon: i, label: l, action: () => { controls.setUniform(id); toast("Uniform: " + l); } })) },
@@ -207,7 +211,7 @@ $("#btnWheel").addEventListener("click", () => wheel.toggle(wheelItems));
 $("#btnFps").addEventListener("click", () => controls.setFps(!controls.fps));
 
 // ---------- Menu + Admin ----------
-const admin = new AdminPanel($("#admin"), weather, {
+admin = new AdminPanel($("#admin"), weather, {
   igniteBuilding: () => { fire.igniteBuilding(pickBuilding()); }, wildfire: () => { const c = world.fuelPositions[Math.floor(Math.random() * world.fuelPositions.length)]; fire.wildfire(c || controls.pos, 60); },
   extinguishAll: () => fire.extinguishAll(), strike: (k) => strike(k), toast
 });
@@ -234,7 +238,7 @@ let hudT = 0;
 const clock = new THREE.Clock();
 function frame() {
   const dt = Math.min(.05, clock.getDelta()), t = clock.elapsedTime; U.uTime.value = t;
-  weather.update(dt); controls.update(dt); combat.update(dt); emotes.update(dt); rp && rp.update(dt, t);
+  weather.update(dt); controls.update(dt); truck.update(dt, fx.night); { const d = Math.hypot(controls.pos.x - 61, controls.pos.z - 30); audio.water(Math.max(0, 1 - d / 50) ** 1.5); } combat.update(dt); emotes.update(dt); rp && rp.update(dt, t);
   if (combat.dead <= 0 && fire.fires.some((f) => f.pos.distanceTo(controls.pos) < 2.5)) combat.damage(12 * dt, "fire");
   if (fx.shake > 0) camera.position.add(new THREE.Vector3((Math.random() - .5), (Math.random() - .5), (Math.random() - .5)).multiplyScalar(fx.shake * .3));
   fx.update(dt, controls.pos); world.update(t, dt); fire.update(dt, camera.position);
@@ -258,4 +262,4 @@ renderer.setAnimationLoop(frame);
 
 $("#loadMsg").textContent = `World ready · ${world.treeCount} trees · ${quality === "high" ? "High" : "Mobile"} graphics`;
 $("#btnStart").addEventListener("click", () => { audio.start(); $("#start").remove(); });
-window.__arerps = { combat, emotes, rp, renderer, frame, weather, fire, controls, world, fx, scene, camera, strike, eq };
+window.__arerps = { truck, admin, combat, emotes, rp, renderer, frame, weather, fire, controls, world, fx, scene, camera, strike, eq };
