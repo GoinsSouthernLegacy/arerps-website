@@ -1,0 +1,16 @@
+{
+  "name": "A.R.E.R.P.S. – Advanced Roleplay Emergency Response Protection System",
+  "short_name": "ARERPS",
+  "description": "Official A.R.E.R.P.S. app – Chattanooga, TN emergency-response roleplay.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#070b14",
+  "theme_color": "#070b14",
+  "icons": [
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "assets/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

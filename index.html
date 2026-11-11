@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>A.R.E.R.P.S. – Advanced Roleplay Emergency Response Protection System</title>
+  <meta name="description" content="Official website of A.R.E.R.P.S. – a futuristic, AI-driven emergency-response roleplay world based on Chattanooga, Tennessee.">
+  <meta name="theme-color" content="#070b14">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="ARERPS">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta property="og:title" content="A.R.E.R.P.S. Official Website">
+  <meta property="og:description" content="Advanced Roleplay Emergency Response Protection System – Chattanooga, TN.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="nav" id="top">
+    <a class="brand" href="#top"><img src="assets/icon.svg" alt="" width="34" height="34"><span>A.R.E.R.P.S.</span></a>
+    <button class="menu-btn" aria-label="Menu" aria-expanded="false" id="menuBtn">☰</button>
+    <nav id="menu">
+      <a href="#about">About</a>
+      <a href="#departments">Departments</a>
+      <a href="#fleet">Units &amp; Fleet</a>
+      <a href="#dispatch">Dispatch Demo</a>
+      <a href="#city">Chattanooga</a>
+      <a href="#roadmap">Roadmap</a>
+      <a href="#rules">Rules</a>
+      <a href="#apply" class="cta">Apply</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <canvas id="scene" aria-label="Interactive 3D SPRAID unit and patrol vehicle"></canvas>
+      <div class="hero-text">
+        <p class="eyebrow">Chattanooga, Tennessee</p>
+        <h1>A.R.E.R.P.S.</h1>
+        <p class="sub">Advanced Roleplay Emergency Response Protection System</p>
+        <p class="lead">A futuristic, AI-driven emergency-services roleplay world. Police, Fire, EMS and Dispatch – with SPRAID robotic units, holographic tech and a living city.</p>
+        <div class="btns">
+          <a class="btn primary" href="#apply">Join a Department</a>
+          <a class="btn" href="#dispatch">Try the Dispatch Demo</a>
+        </div>
+        <p class="hint">Drag the 3D scene to look around.</p>
+      </div>
+    </section>
+
+    <section id="about">
+      <h2>About A.R.E.R.P.S.</h2>
+      <p class="wide">A.R.E.R.P.S. is a high-realism roleplay experience built around real Tennessee locations, with emergency services at its heart. AI-driven NPCs, SPRAID robotic officers and medics, holographic interfaces and dynamic weather and day/night cycles make every shift different.</p>
+      <div class="grid">
+        <article class="card"><h3>🤖 AI-Driven NPCs</h3><p>Context-aware police, EMS, security and civilian robots that react to what is happening around them.</p></article>
+        <article class="card"><h3>🔮 Holographic Tech</h3><p>Holo phones, dispatch terminals, street signs, billboards and vehicle HUDs.</p></article>
+        <article class="card"><h3>🌤️ Living World</h3><p>Dynamic weather and day/night, realistic roads, bridges, buildings and interiors.</p></article>
+        <article class="card"><h3>📱 Cross-Platform</h3><p>Designed for PC, mobile, controller and VR players.</p></article>
+      </div>
+    </section>
+
+    <section id="departments" class="alt">
+      <h2>Departments</h2>
+      <div class="grid" id="deptGrid"></div>
+    </section>
+
+    <section id="fleet">
+      <h2>SPRAID Units &amp; Fleet</h2>
+      <p class="wide">Every unit uses blue, red and white emergency lighting only. Tap a unit to see its details and cycle its light modes.</p>
+      <div class="fleet">
+        <div class="unit-list" id="unitList" role="tablist"></div>
+        <div class="unit-detail card" id="unitDetail" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section id="dispatch" class="alt">
+      <h2>Dispatch Demo</h2>
+      <p class="wide">A small working preview of the dispatcher console. Create calls, assign units and close them out. Everything is saved on your device only.</p>
+      <div class="dispatch">
+        <form id="callForm" class="card">
+          <h3>New call</h3>
+          <label>Call type
+            <select id="callType">
+              <option>Traffic Accident</option><option>Medical Emergency</option><option>Structure Fire</option>
+              <option>Burglary In Progress</option><option>Suspicious Person</option><option>Welfare Check</option>
+            </select>
+          </label>
+          <label>Location
+            <select id="callLoc"></select>
+          </label>
+          <label>Priority
+            <select id="callPri"><option value="1">1 – Critical</option><option value="2" selected>2 – Urgent</option><option value="3">3 – Routine</option></select>
+          </label>
+          <button class="btn primary" type="submit">Dispatch call</button>
+          <button class="btn" type="button" id="clearCalls">Clear all</button>
+        </form>
+        <div class="card"><h3>Active calls</h3><ul id="callList" class="calls"></ul></div>
+      </div>
+    </section>
+
+    <section id="city">
+      <h2>Chattanooga, TN</h2>
+      <p class="wide">The A.R.E.R.P.S. world is modeled on real Chattanooga landmarks and neighborhoods.</p>
+      <div class="grid" id="cityGrid"></div>
+    </section>
+
+    <section id="roadmap" class="alt">
+      <h2>Roadmap</h2>
+      <p class="wide">Our build plan, phase by phase. Tap a phase to open it.</p>
+      <div id="roadmapList"></div>
+    </section>
+
+    <section id="rules">
+      <h2>Community Rules</h2>
+      <ol class="rules">
+        <li>Respect every member. No harassment, hate speech or discrimination.</li>
+        <li>Stay in character during active scenes (no fail-roleplay, no metagaming).</li>
+        <li>Follow department chain of command and SOPs.</li>
+        <li>No exploiting, cheating or abusing bugs. Report them instead.</li>
+        <li>Value life: do not randomly kill (no RDM / VDM).</li>
+        <li>Keep content age-appropriate and follow platform Terms of Service.</li>
+        <li>Staff decisions can be appealed through the appeal process.</li>
+      </ol>
+    </section>
+
+    <section id="apply" class="alt">
+      <h2>Apply to Join</h2>
+      <form id="applyForm" class="card form">
+        <label>Username <input name="username" required maxlength="40" autocomplete="nickname"></label>
+        <label>Discord tag <input name="discord" required maxlength="40" placeholder="name or name#0000"></label>
+        <label>Department
+          <select name="dept" id="applyDept" required></select>
+        </label>
+        <label>Why do you want to join?
+          <textarea name="why" required minlength="20" maxlength="800" rows="5"></textarea>
+        </label>
+        <label class="check"><input type="checkbox" required> I have read and agree to the community rules.</label>
+        <button class="btn primary" type="submit">Submit application</button>
+        <p id="applyMsg" class="msg" role="status"></p>
+      </form>
+    </section>
+  </main>
+
+  <footer>
+    <p>© <span id="year"></span> A.R.E.R.P.S. · Chattanooga, TN · Fictional roleplay project. Not affiliated with any real agency.</p>
+    <p><button class="link" id="installBtn" hidden>Install app</button></p>
+  </footer>
+
+  <script type="importmap">
+  { "imports": {
+    "three": "./vendor/three/three.module.js",
+    "three/addons/": "./vendor/three/addons/"
+  } }
+  </script>
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+  <script type="module" src="js/scene.js"></script>
+</body>
+</html>
